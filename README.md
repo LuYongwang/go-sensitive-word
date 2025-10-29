@@ -8,7 +8,7 @@
 - 🔄 **动态维护**: 支持运行时动态添加/删除/替换敏感词，无需重启
 - 🛡️ **智能归一化**: 内置多种归一化策略，有效防御混淆攻击（大小写、全角、相似字符等）
 - 📦 **易用性**: 丰富的 API 和示例代码，快速接入
-- 🔌 **灵活加载**: 支持内置词库、文件、数据库、Redis 等多种加载方式
+- 🔌 **灵活加载**: 支持内置词库、文件、自定义(DB/http) 等多种加载方式
 - 🛠️ **工具函数**: 内置邮箱、URL、微信号等敏感信息检测和屏蔽功能
 - 🔒 **并发安全**: 全链路并发安全，支持高并发场景
 - ♻️ **资源管理**: 支持优雅关闭，避免 goroutine 泄漏
@@ -183,6 +183,7 @@ go run examples/dynamic/main.go
 详细示例说明请查看：[examples/README.md](./examples/README.md)
 
 ## 参考资料
+- go-sensitive-word项目: https://github.com/zmexing/go-sensitive-word
 - 基于Java DFA实现的敏感词过滤：https://github.com/houbb/sensitive-word
 - unicode字词的神奇组合：https://www.zhihu.com/question/30873035
 - unicode违规技巧：https://zhuanlan.zhihu.com/p/545309061
