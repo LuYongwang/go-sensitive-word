@@ -1,0 +1,46 @@
+version: "2"
+run:
+  modules-download-mode: readonly
+output:
+  formats:
+    text:
+      path: stdout
+      print-issued-lines: true
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - errcheck
+    - gocyclo
+    - govet
+    - misspell
+    - staticcheck
+    - unused
+  settings:
+    dupl:
+      threshold: 50
+    funlen:
+      lines: 80
+      statements: 40
+    gocyclo:
+      min-complexity: 35
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
