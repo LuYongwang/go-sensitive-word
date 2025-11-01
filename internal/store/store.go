@@ -14,6 +14,16 @@ type Stats struct {
 	Source      []string  // 词库来源（文件路径、URL等）
 }
 
+// WordSource 词与来源的映射关系
+type WordSource struct {
+	Word   string   // 敏感词
+	Source []string // 该词所属的词库来源列表
+}
+
+// DictLoaderWithSource 带来源标识的词库加载回调函数类型
+// 返回词列表、来源标识和可能的错误
+type DictLoaderWithSource func() ([]string, string, error)
+
 // DictLoader 词库加载回调函数类型
 // 使用方可以实现自己的词库读取逻辑（如从数据库、Redis、配置中心等读取）
 // 返回词列表和可能的错误
@@ -41,6 +51,11 @@ type (
 		AddWords(words []string) error                  // 批量添加（新增方法，与 AddWord 功能相同但参数更明确）
 		DelWords(words []string) error                  // 批量删除（新增方法）
 		ReplaceWords(oldWords, newWords []string) error // 批量替换
+
+		// 带来源标识的操作
+		AddWordsWithSource(words []string, source string) error // 批量添加词并指定来源
+		GetWordSources(word string) []string                    // 获取指定词的来源列表
+		GetAllWordSources() map[string][]string                 // 获取所有词的来源映射
 
 		// 导出功能
 		ExportToWriter(w io.Writer) error // 导出到 Writer

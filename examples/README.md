@@ -22,6 +22,10 @@ examples/
 │   └── main.go                # 工具函数使用示例
 ├── lifecycle/
 │   └── main.go                # 资源管理示例
+├── multi-instance/
+│   └── main.go                # 多实例使用示例
+├── word-source/
+│   └── main.go                # 来源追踪功能演示
 └── comprehensive/
     └── main.go                # 综合功能演示
 ```
@@ -125,7 +129,30 @@ go run examples/lifecycle/main.go
 - 生产环境最佳实践
 - 并发安全演示
 
-### 9. 综合功能示例
+### 9. 多实例示例
+
+```bash
+go run examples/multi-instance/main.go
+```
+
+演示内容：
+- 创建多个独立的过滤器实例
+- 不同业务场景使用不同词库
+- 实例间互不干扰
+
+### 10. 来源追踪示例
+
+```bash
+go run examples/word-source/main.go
+```
+
+演示内容：
+- 为词库指定来源标识
+- 查询敏感词的来源
+- 查找敏感词及其来源信息
+- 获取所有词的来源分布
+
+### 11. 综合功能示例
 
 ```bash
 go run examples/comprehensive/main.go
@@ -219,6 +246,26 @@ go run examples/comprehensive/main.go
 - ✅ 生产环境最佳实践
 - ✅ 并发安全测试
 
+### multi-instance/main.go - 多实例示例
+
+**适合人群：** 需要多个独立词库的业务场景
+
+**演示功能：**
+- ✅ 创建多个独立的过滤器实例
+- ✅ 不同实例加载不同词库
+- ✅ 实例间数据隔离
+
+### word-source/main.go - 来源追踪示例
+
+**适合人群：** 需要追踪敏感词来源的场景
+
+**演示功能：**
+- ✅ `LoadDictEmbedWithSource()` - 加载词库并指定来源
+- ✅ `AddWordsWithSource()` - 添加词并指定来源
+- ✅ `GetWordSources()` - 查询单个词的来源
+- ✅ `FindAllWithSource()` - 查找词及其来源
+- ✅ `GetAllWordSources()` - 获取所有词的来源映射
+
 ### comprehensive/main.go - 综合功能演示
 
 **适合人群：** 了解项目全貌
@@ -252,6 +299,12 @@ go run examples/comprehensive/main.go
 | | MergeFromManager | dynamic/main.go, comprehensive/main.go |
 | | RefreshFromPath | file-load/main.go |
 | | Clear | 未单独演示，可参考 comprehensive/main.go |
+| **多实例** | 多个独立实例 | multi-instance/main.go |
+| **来源追踪** | LoadDictEmbedWithSource | word-source/main.go |
+| | AddWordsWithSource | word-source/main.go |
+| | GetWordSources | word-source/main.go |
+| | FindAllWithSource | word-source/main.go |
+| | GetAllWordSources | word-source/main.go |
 | **归一化** | 默认归一化 | normalize/main.go, comprehensive/main.go |
 | | 自定义归一化 | normalize/main.go |
 | **工具函数** | HasEmail / MaskEmail | tools/main.go |
@@ -267,7 +320,9 @@ go run examples/comprehensive/main.go
 2. **生产环境**：参考 `ac/main.go` 和 `lifecycle/main.go`
 3. **需要动态更新**：查看 `dynamic/main.go`
 4. **词库在外部系统**：参考 `callback/main.go`
-5. **需要完整参考**：运行 `comprehensive/main.go`
+5. **多业务场景**：参考 `multi-instance/main.go`
+6. **需要来源追踪**：查看 `word-source/main.go`
+7. **需要完整参考**：运行 `comprehensive/main.go`
 
 ## 🐛 问题反馈
 

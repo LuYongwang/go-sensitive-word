@@ -33,12 +33,8 @@ type FilterOption struct {
 //
 // 使用示例：
 //
-//	err := manager.LoadDictEmbed(DictCovid19, DictPornography)
+//	err := manager.LoadDictEmbed(DictPornography)
 var (
-	//go:embed wordlists/GFW补充词库.txt
-	DictGFWAdditional string
-	//go:embed wordlists/其他词库.txt
-	DictOther string
 	//go:embed wordlists/反动词库.txt
 	DictReactionary string
 	//go:embed wordlists/广告类型.txt
@@ -51,18 +47,8 @@ var (
 	DictPeopleLife string
 	//go:embed wordlists/涉枪涉爆.txt
 	DictGunExplosion string
-	//go:embed wordlists/网易前端过滤敏感词库.txt
-	DictNeteaseFE string
-	//go:embed wordlists/色情类型.txt
-	DictSexual string
 	//go:embed wordlists/色情词库.txt
 	DictPornography string
-	//go:embed wordlists/补充词库.txt
-	DictAdditional string
 	//go:embed wordlists/贪腐词库.txt
 	DictCorruption string
-	//go:embed wordlists/零时-Tencent.txt
-	DictTemporaryTencent string
-	//go:embed wordlists/非法网址.txt
-	DictIllegalURL string
 )

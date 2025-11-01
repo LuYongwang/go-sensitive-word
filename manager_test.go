@@ -207,14 +207,11 @@ func TestDFA(t *testing.T) {
 
 	// 加载敏感词库
 	err = filter.LoadDictEmbed(
-		DictOther,
 		DictReactionary,
 		DictViolence,
 		DictPeopleLife,
 		DictPornography,
-		DictAdditional,
 		DictCorruption,
-		DictTemporaryTencent,
 	)
 	if err != nil {
 		log.Fatalf("加载词库发生了错误, err:%v", err)
@@ -267,14 +264,11 @@ func TestAC(t *testing.T) {
 
 	// 加载敏感词库
 	err = filter.LoadDictEmbed(
-		DictOther,
 		DictReactionary,
 		DictViolence,
 		DictPeopleLife,
 		DictPornography,
-		DictAdditional,
 		DictCorruption,
-		DictTemporaryTencent,
 	)
 	if err != nil {
 		log.Fatalf("加载词库发生了错误, err:%v", err)

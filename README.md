@@ -12,6 +12,7 @@
 - 🛠️ **工具函数**: 内置邮箱、URL、微信号等敏感信息检测和屏蔽功能
 - 🔒 **并发安全**: 全链路并发安全，支持高并发场景
 - ♻️ **资源管理**: 支持优雅关闭，避免 goroutine 泄漏
+- 🔍 **来源追踪**: 支持精确追踪每个敏感词所属的词库来源
 
 ## 📋 目录结构
 
@@ -26,6 +27,8 @@ go-sensitive-word/
 │   ├── normalize/         # 归一化配置示例
 │   ├── tools/             # 工具函数示例
 │   ├── lifecycle/         # 资源管理示例
+│   ├── multi-instance/    # 多实例示例
+│   ├── word-source/       # 来源追踪示例
 │   └── comprehensive/     # 综合功能演示
 ├── docs/                  # 文档目录
 │   ├── getting-started.md        # 快速开始指南
@@ -34,6 +37,7 @@ go-sensitive-word/
 │   ├── algorithm-guide.md         # 算法选择指南
 │   ├── word-management.md         # 词库管理详解
 │   ├── word-loading.md            # 词库加载详解
+│   ├── word-source-tracking.md    # 来源追踪功能详解
 │   ├── tools.md                   # 工具函数详解
 │   ├── lifecycle.md               # 资源管理详解
 │   ├── faq.md                     # 常见问题
@@ -81,8 +85,8 @@ func main() {
 
    // 加载敏感词库
    err = filter.LoadDictEmbed(
-      sensitive.DictGFWAdditional,
-      sensitive.DictOther,
+      sensitive.DictPolitical,
+      sensitive.DictViolence,
       // ... 其他词库
    )
    if err != nil {
@@ -139,6 +143,12 @@ func main() {
 - `LoadDictPath()` - 从文件路径加载词库
 - `LoadDictCallback()` - 通过回调函数加载词库（支持数据库、Redis等）
 
+### 来源追踪
+- `LoadDictEmbedWithSource()` - 加载内置词库并指定来源标识
+- `AddWordsWithSource()` - 添加敏感词并指定来源
+- `GetWordSources()` - 查询单个词的来源列表
+- `FindAllWithSource()` - 查找敏感词及其来源信息
+
 ## 📖 文档导航
 
 - [快速开始指南](./docs/getting-started.md) - 新手入门，5分钟上手
@@ -147,6 +157,7 @@ func main() {
 - [算法选择指南](./docs/algorithm-guide.md) - DFA vs AC 算法选择建议
 - [词库管理详解](./docs/word-management.md) - 动态维护词库指南
 - [词库加载详解](./docs/word-loading.md) - 多种词库加载方式
+- [来源追踪详解](./docs/word-source-tracking.md) - 词库来源追踪功能
 - [工具函数详解](./docs/tools.md) - 敏感信息检测和屏蔽
 - [资源管理详解](./docs/lifecycle.md) - 生命周期和优雅关闭
 - [常见问题](./docs/faq.md) - FAQ 和问题解答
@@ -166,6 +177,8 @@ func main() {
 | [examples/normalize/main.go](./examples/normalize/main.go) | 归一化配置示例 |
 | [examples/tools/main.go](./examples/tools/main.go) | 工具函数使用示例 |
 | [examples/lifecycle/main.go](./examples/lifecycle/main.go) | 资源管理示例 |
+| [examples/multi-instance/main.go](./examples/multi-instance/main.go) | 多实例使用示例 |
+| [examples/word-source/main.go](./examples/word-source/main.go) | 来源追踪功能演示 |
 | [examples/comprehensive/main.go](./examples/comprehensive/main.go) | 综合功能演示 |
 
 **运行示例：**
@@ -181,6 +194,65 @@ go run examples/dynamic/main.go
 ```
 
 详细示例说明请查看：[examples/README.md](./examples/README.md)
+
+## 🚀 性能测试
+
+### 测试环境
+- CPU: Apple M1 Pro
+- 词库: 2915 个敏感词
+- 测试方法: Go benchmark
+
+### 核心功能性能
+
+| 操作 | DFA | AC | 说明 |
+|------|-----|-----|------|
+| **IsSensitive** | 1777 ns/op | 1605 ns/op | 判断是否敏感 |
+| **FindAll** | 1659 ns/op | 1780 ns/op | 查找所有敏感词 |
+| **Replace** | 1781 ns/op | 1899 ns/op | 替换敏感词 |
+
+### 并发性能
+
+| 操作 | DFA (Parallel) | AC (Parallel) | 说明 |
+|------|---------------|---------------|------|
+| **IsSensitive** | 306.3 ns/op | 290.3 ns/op | 并发检测 |
+
+### 长文本性能（~5000字符）
+
+| 操作 | DFA | AC | 提升 |
+|------|-----|-----|------|
+| **IsSensitive** | 621338 ns/op | 551174 ns/op | 1.13x |
+
+### 来源追踪性能
+
+| 操作 | 性能 | 说明 |
+|------|------|------|
+| **GetWordSources** | 179.8 ns/op | 查询单个词来源 |
+| **FindAllWithSource** | 2148 ns/op | 查找词及来源 |
+
+### 运行性能测试
+
+```bash
+# 运行所有性能测试
+go test -bench=. -benchtime=3s -run TestXXX
+
+# 测试指定算法
+go test -bench=BenchmarkAC_IsSensitive -benchtime=3s
+go test -bench=BenchmarkDFA_IsSensitive -benchtime=3s
+
+# 并发测试
+go test -bench=BenchmarkAC_IsSensitive_Parallel -benchtime=3s
+
+# 长文本测试
+go test -bench=BenchmarkAC_LongText -benchtime=3s
+```
+
+**性能结论：**
+- AC 算法在单次检测和并发场景下性能略优于 DFA
+- 长文本场景下 AC 算法有明显优势
+- 来源追踪功能性能开销极小（~200ns）
+- 并发场景下两种算法性能相当优秀
+
+详细性能数据请查看：[benchmark_test.go](./benchmark_test.go)
 
 ## 参考资料
 - go-sensitive-word项目: https://github.com/zmexing/go-sensitive-word

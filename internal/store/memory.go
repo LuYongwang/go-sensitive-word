@@ -13,23 +13,25 @@ import (
 )
 
 type MemoryModel struct {
-	store      map[string]struct{}
-	storeMu    sync.RWMutex // 保护词库 map
-	totalWords atomic.Int64 // 原子计数，避免 O(n) 的 Count()
-	addChan    chan string
-	delChan    chan string
-	closed     chan struct{}
-	mu         sync.RWMutex // 保护统计信息
-	stats      Stats
-	sources    []string // 记录加载来源
+	store         map[string]struct{}      // 词库
+	wordSources   map[string][]string      // 词到来源的映射
+	storeMu       sync.RWMutex             // 保护词库 map 和 wordSources
+	totalWords    atomic.Int64             // 原子计数，避免 O(n) 的 Count()
+	addChan       chan string
+	delChan       chan string
+	closed        chan struct{}
+	mu            sync.RWMutex // 保护统计信息
+	stats         Stats
+	sources       []string // 记录加载来源
 }
 
 func NewMemoryModel() *MemoryModel {
 	return &MemoryModel{
-		store:   make(map[string]struct{}),
-		addChan: make(chan string, 8192),
-		delChan: make(chan string, 8192),
-		closed:  make(chan struct{}),
+		store:       make(map[string]struct{}),
+		wordSources: make(map[string][]string),
+		addChan:     make(chan string, 8192),
+		delChan:     make(chan string, 8192),
+		closed:      make(chan struct{}),
 		stats: Stats{
 			TotalWords:  0,
 			LastUpdate:  time.Now(),
@@ -314,6 +316,7 @@ func (m *MemoryModel) Clear() error {
 	// 重置计数器（防止累积误差）
 	m.storeMu.Lock()
 	m.totalWords.Store(0)
+	m.wordSources = make(map[string][]string)
 	m.storeMu.Unlock()
 	m.mu.Lock()
 	m.stats.Source = make([]string, 0)
@@ -353,4 +356,93 @@ func (m *MemoryModel) Shutdown(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+// AddWordsWithSource 批量添加词并指定来源
+func (m *MemoryModel) AddWordsWithSource(words []string, source string) error {
+	count := 0
+	for _, word := range words {
+		word = strings.TrimSpace(word)
+		if word == "" {
+			continue
+		}
+		
+		// 合并锁：同时保护 store 和 wordSources
+		m.storeMu.Lock()
+		isNew := !m.storeExists(word)
+		if isNew {
+			m.store[word] = struct{}{}
+			m.totalWords.Add(1)
+			count++
+		}
+		
+		// 在同一个锁下操作来源映射，避免二次锁
+		if m.wordSources == nil {
+			m.wordSources = make(map[string][]string)
+		}
+		if isNew {
+			m.wordSources[word] = []string{source}
+		} else {
+			// 检查来源是否已存在
+			sources := m.wordSources[word]
+			exists := false
+			for _, s := range sources {
+				if s == source {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				m.wordSources[word] = append(sources, source)
+			}
+		}
+		m.storeMu.Unlock()
+
+		select {
+		case m.addChan <- word:
+		case <-m.closed:
+			return errors.New("store closed")
+		}
+	}
+
+	// 更新统计信息
+	m.mu.Lock()
+	m.stats.TotalWords = int(m.totalWords.Load())
+	m.stats.LastUpdate = time.Now()
+	m.stats.UpdateCount += count
+	m.mu.Unlock()
+
+	return nil
+}
+
+// GetWordSources 获取指定词的来源列表
+func (m *MemoryModel) GetWordSources(word string) []string {
+	m.storeMu.RLock()
+	defer m.storeMu.RUnlock()
+	sources, exists := m.wordSources[word]
+	if !exists {
+		return nil
+	}
+	// 返回副本
+	result := make([]string, len(sources))
+	copy(result, sources)
+	return result
+}
+
+// GetAllWordSources 获取所有词的来源映射
+func (m *MemoryModel) GetAllWordSources() map[string][]string {
+	m.storeMu.RLock()
+	defer m.storeMu.RUnlock()
+	// 返回深拷贝
+	result := make(map[string][]string, len(m.wordSources))
+	for word, sources := range m.wordSources {
+		result[word] = append([]string{}, sources...)
+	}
+	return result
+}
+
+// storeExists 辅助方法：检查词是否存在
+func (m *MemoryModel) storeExists(word string) bool {
+	_, exists := m.store[word]
+	return exists
 }

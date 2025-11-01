@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/LuYongwang/go-sensitive-word/internal/filter"
 	"github.com/LuYongwang/go-sensitive-word/internal/filter/ac"
@@ -253,4 +254,102 @@ func (m *Manager) LoadDictCallback(loader store.DictLoader, source string) error
 		return errors.New("store is nil")
 	}
 	return m.Store.LoadDictCallback(loader, source)
+}
+
+// ==================== 词库来源追踪功能 ====================
+
+// LoadDictEmbedWithSource 加载内置词库并指定来源名称
+// content: 词库内容字符串
+// source: 来源标识，如 "political", "violence", "custom" 等
+func (m *Manager) LoadDictEmbedWithSource(content string, source string) error {
+	if m.Store == nil {
+		return errors.New("store is nil")
+	}
+	// 读取词库内容并按行拆分
+	lines := strings.Split(content, "\n")
+	words := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		words = append(words, line)
+	}
+	// 使用 AddWordsWithSource 添加，会自动归一化
+	return m.AddWordsWithSource(words, source)
+}
+
+// AddWordsWithSource 批量添加敏感词并指定来源
+// words: 敏感词列表
+// source: 来源标识，如 "political", "violence", "custom" 等
+func (m *Manager) AddWordsWithSource(words []string, source string) error {
+	if m.Store == nil {
+		return errors.New("store is nil")
+	}
+	// 对词进行归一化
+	normalizedWords := make([]string, 0, len(words))
+	for _, word := range words {
+		normalized := NormalizeWord(word, m.normalizer)
+		if normalized != "" {
+			normalizedWords = append(normalizedWords, normalized)
+		}
+	}
+	if len(normalizedWords) == 0 {
+		return nil
+	}
+	return m.Store.AddWordsWithSource(normalizedWords, source)
+}
+
+// GetWordSources 获取指定词的来源列表
+func (m *Manager) GetWordSources(word string) []string {
+	if m.Store == nil {
+		return nil
+	}
+	normalized := NormalizeWord(word, m.normalizer)
+	return m.Store.GetWordSources(normalized)
+}
+
+// GetAllWordSources 获取所有词的来源映射
+func (m *Manager) GetAllWordSources() map[string][]string {
+	if m.Store == nil {
+		return nil
+	}
+	return m.Store.GetAllWordSources()
+}
+
+// FindAllWithSource 查找文本中所有敏感词及其来源信息
+func (m *Manager) FindAllWithSource(text string) []filter.MatchResult {
+	words := m.FindAll(text)
+	if len(words) == 0 {
+		return []filter.MatchResult{}
+	}
+
+	result := make([]filter.MatchResult, 0, len(words))
+	seen := make(map[string]bool)
+	for _, word := range words {
+		if seen[word] {
+			continue
+		}
+		seen[word] = true
+		sources := m.GetWordSources(word)
+		result = append(result, filter.MatchResult{
+			Word:   word,
+			Source: sources,
+		})
+	}
+	return result
+}
+
+// FindAllCountWithSource 查找所有敏感词及其出现次数和来源信息
+func (m *Manager) FindAllCountWithSource(text string) map[string]filter.MatchResult {
+	countMap := m.FindAllCount(text)
+	result := make(map[string]filter.MatchResult, len(countMap))
+	for word := range countMap {
+		sources := m.GetWordSources(word)
+		result[word] = filter.MatchResult{
+			Word:   word,
+			Source: sources,
+		}
+	}
+	return result
 }
